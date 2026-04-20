@@ -6,7 +6,6 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#040d04; overflow:hidden; font-family:'Courier New',monospace; user-select:none; }
-
 /* ── MENU ── */
 #menu {
   position:fixed; inset:0;
@@ -41,7 +40,6 @@ body { background:#040d04; overflow:hidden; font-family:'Courier New',monospace;
 }
 .btn:hover{transform:scale(1.06);box-shadow:0 0 50px rgba(57,255,20,.8);}
 .hint{margin-top:20px;color:rgba(57,255,20,.28);font-size:9px;letter-spacing:1px;text-align:center;line-height:1.9;}
-
 /* ── HUD ── */
 #hud{
   position:fixed;top:0;left:0;right:0;height:58px;
@@ -62,7 +60,6 @@ body { background:#040d04; overflow:hidden; font-family:'Courier New',monospace;
 #turnlbl{font-size:9px;letter-spacing:3px;color:#39ff14;animation:blink 1s step-end infinite;}
 #clock{font-size:28px;font-weight:900;color:#39ff14;font-family:Impact,sans-serif;}
 @keyframes blink{50%{opacity:.3}}
-
 /* ── WEAPON BAR ── */
 #wbar{
   position:fixed;bottom:0;left:0;right:0;height:64px;
@@ -77,13 +74,11 @@ body { background:#040d04; overflow:hidden; font-family:'Courier New',monospace;
 .wslot:hover{border-color:#39ff14;transform:translateY(-4px);}
 .wslot.wa{border-color:#39ff14;background:rgba(57,255,20,.14);box-shadow:0 0 12px rgba(57,255,20,.4);}
 .wi{font-size:22px;}.wk{font-size:8px;color:rgba(57,255,20,.45);letter-spacing:.5px;margin-top:1px;}
-
 /* ── POWER ── */
 #pwrap{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);width:176px;display:none;z-index:5;}
 #plbl{font-size:9px;color:#39ff14;letter-spacing:2px;text-align:center;margin-bottom:3px;}
 #pbg{height:7px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;}
 #pbar{height:100%;border-radius:3px;background:linear-gradient(90deg,#39ff14,#f5e642);}
-
 /* ── WIND ── */
 #windlbl{position:fixed;bottom:70px;right:14px;z-index:5;font-size:9px;color:rgba(57,255,20,.45);letter-spacing:2px;display:none;}
 #wind-visual {
@@ -97,13 +92,20 @@ body { background:#040d04; overflow:hidden; font-family:'Courier New',monospace;
   transition: transform 0.1s; display: inline-block;
 }
 #wind-text { color: #39ff14; font-size: 10px; letter-spacing: 1px; }
-
+/* ── MUSIC CONTROL ── */
+#music-control {
+  position: fixed; bottom: 70px; right: 14px; z-index: 6;
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(0,18,0,0.7); border: 1px solid #39ff14;
+  border-radius: 20px; padding: 5px 12px; cursor: pointer;
+}
+#music-icon { font-size: 22px; }
+#music-text { color: #39ff14; font-size: 10px; letter-spacing: 1px; }
 /* ── CAM TRACKING ── */
 #cammode{
   position:fixed;top:66px;right:14px;z-index:5;
   font-size:8px;color:rgba(57,255,20,.35);letter-spacing:2px;display:none;
 }
-
 /* ── MESSAGES ── */
 #msg{
   position:fixed;top:68px;left:50%;transform:translateX(-50%);
@@ -111,7 +113,6 @@ body { background:#040d04; overflow:hidden; font-family:'Courier New',monospace;
   text-shadow:0 0 18px #f5e642;z-index:8;opacity:0;transition:opacity .3s;
   pointer-events:none;font-family:Impact,sans-serif;white-space:nowrap;
 }
-
 /* ── TAUNT BUBBLE ── */
 #taunt-bubble {
   position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
@@ -120,7 +121,6 @@ body { background:#040d04; overflow:hidden; font-family:'Courier New',monospace;
   font-size: 14px; font-weight: bold; z-index: 7; white-space: nowrap;
   opacity: 0; transition: opacity 0.2s; pointer-events: none;
 }
-
 /* ── VICTORY ── */
 #victory{
   position:fixed;inset:0;background:rgba(0,0,0,.9);
@@ -135,6 +135,13 @@ canvas{display:block;position:fixed;top:0;left:0;width:100%;height:100%;}
 </style>
 </head>
 <body>
+<!-- MÚSICA DE FUNDO (integração completa) -->
+<!-- Baixe uma das sugestões clássicas (ex: Can-Can de Offenbach) em MP3/OGG e coloque na mesma pasta como "can-can.mp3" -->
+<audio id="bg-music" loop preload="auto">
+  <source src="can-can.mp3" type="audio/mpeg">
+  <source src="can-can.ogg" type="audio/ogg">
+</audio>
+
 <div id="menu">
   <div class="logo">SELVAGEM</div>
   <div class="sub">◈ WORMS DA FLORESTA (MUITO LOUCO) ◈</div>
@@ -159,9 +166,7 @@ canvas{display:block;position:fixed;top:0;left:0;width:100%;height:100%;}
     1–4 : trocar arma &nbsp;|&nbsp; câmera segue projétil
   </div>
 </div>
-
 <canvas id="cv"></canvas>
-
 <div id="hud">
   <div class="pinfo">
     <div class="pav" id="av1">🐆</div>
@@ -184,27 +189,27 @@ canvas{display:block;position:fixed;top:0;left:0;width:100%;height:100%;}
     </div>
   </div>
 </div>
-
 <div id="wbar">
   <div class="wslot wa" id="ws0" onclick="selW(0)"><div class="wi">💣</div><div class="wk">[1] BOMBA</div></div>
   <div class="wslot" id="ws1" onclick="selW(1)"><div class="wi">🚀</div><div class="wk">[2] FOGUETE</div></div>
   <div class="wslot" id="ws2" onclick="selW(2)"><div class="wi">🧨</div><div class="wk">[3] DINAMITE</div></div>
   <div class="wslot" id="ws3" onclick="selW(3)"><div class="wi">🌿☠️</div><div class="wk">[4] VENENO</div></div>
 </div>
-
 <div id="pwrap"><div id="plbl">POTÊNCIA</div><div id="pbg"><div id="pbar" style="width:0%"></div></div></div>
 <div id="windlbl"></div>
-
 <!-- Indicador visual do vento (biruta) -->
 <div id="wind-visual">
   <span id="windsock">🎐</span>
   <span id="wind-text">VENTO 0%</span>
 </div>
-
+<!-- Controle de música de fundo (novo) -->
+<div id="music-control" onclick="toggleMusic()">
+  <span id="music-icon">🎵</span>
+  <span id="music-text">MÚSICA ON</span>
+</div>
 <div id="cammode">📡 CÂMERA: PROJÉTIL</div>
 <div id="msg"></div>
 <div id="taunt-bubble"></div>
-
 <div id="victory">
   <div id="vem">🏆</div>
   <div id="vtitle">REI DA SELVA</div>
@@ -212,10 +217,8 @@ canvas{display:block;position:fixed;top:0;left:0;width:100%;height:100%;}
   <div id="vtok"></div>
   <button class="btn" onclick="location.reload()">↩ JOGAR DE NOVO</button>
 </div>
-
 <script>
 'use strict';
-
 // ==================== ÁUDIO CÔMICO 8-BIT ====================
 let audioCtx = null;
 function initAudio() {
@@ -227,12 +230,10 @@ function initAudio() {
 function playSound(type, volume=0.3) {
   if (!audioCtx) { initAudio(); if (!audioCtx) return; }
   if (audioCtx.state === 'suspended') audioCtx.resume();
-
   const now = audioCtx.currentTime;
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.connect(gain); gain.connect(audioCtx.destination);
-
   if (type === 'jump') {
     osc.frequency.value = 440; gain.gain.setValueAtTime(volume*0.8, now);
     osc.frequency.exponentialRampToValueAtTime(220, now+0.15);
@@ -273,6 +274,25 @@ function playSound(type, volume=0.3) {
   }
 }
 
+// ==================== MÚSICA DE FUNDO CLÁSSICA (integração completa) ====================
+const bgMusic = document.getElementById('bg-music');
+bgMusic.volume = 0.3; // volume baixo para não atrapalhar os efeitos sonoros
+
+function toggleMusic() {
+  if (!bgMusic) return;
+  const icon = document.getElementById('music-icon');
+  const txt = document.getElementById('music-text');
+  if (bgMusic.paused) {
+    bgMusic.play().catch(e => console.log("Autoplay bloqueado"));
+    icon.textContent = '🎵';
+    txt.textContent = 'MÚSICA ON';
+  } else {
+    bgMusic.pause();
+    icon.textContent = '🔇';
+    txt.textContent = 'MÚSICA OFF';
+  }
+}
+
 // ==================== DEFS ====================
 const CHARS = [
   { emoji:'🐆', name:'ONÇA', hp:120, spd:1.5, dmgMult:1.3,
@@ -282,18 +302,15 @@ const CHARS = [
   { emoji:'🦎', name:'LAGARTO', hp:80, spd:1.3, dmgMult:1.6,
     taunts:['Língua!','Veneno!','Sou liso!','Tóxico!'] },
 ];
-
 const WEAPONS = [
   { name:'BOMBA', icon:'💣', baseDmg:40, radius:62, fuse:3.5, isProj:true, poison:false, cost:15 },
   { name:'FOGUETE', icon:'🚀', baseDmg:55, radius:55, fuse:0, isProj:true, poison:false, cost:25 },
   { name:'DINAMITE', icon:'🧨', baseDmg:72, radius:82, fuse:3.0, isProj:false, poison:false, cost:40 },
   { name:'VENENO', icon:'🌿', baseDmg:34, radius:50, fuse:0, isProj:true, poison:true, cost:20 },
 ];
-
 const GRAV = 0.28;
 const GW = 2800;
 const PSIZE = 20;
-
 // Canvas
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
@@ -301,7 +318,6 @@ let W = 0, H = 0;
 function resize(){ W = cv.width = window.innerWidth; H = cv.height = window.innerHeight; }
 resize();
 window.addEventListener('resize', resize);
-
 // State
 let phase = 'menu';
 let pickedChar = 0;
@@ -317,10 +333,8 @@ let turnClock = 30;
 let clockTimer = null;
 let tokens = [0,0];
 let wind = 0;
-
 // Camera
 let camX = 0, camTargX = 0, camMode = 'player';
-
 // Input
 const keys = {};
 let mxS=0, myS=0;
@@ -328,63 +342,51 @@ let mouseHeld = false, charging = false;
 let power=0, powerDir=1;
 let shotFired = false, endingTurn = false;
 let curWeapon = 0;
-
 // Comic
 let lastTaunt = 0;
 let msgTO = null;
-
 // Noise
 function noise1D(x, seed=1){ return Math.sin(x*0.1*seed + seed)*0.5+0.5; }
 function octaveNoise(x, seed){
   return noise1D(x,seed)*0.55 + noise1D(x*2.1,seed*3)*0.28 + noise1D(x*4.3,seed*7)*0.17;
 }
-
 // Pick character
 function pick(i){
   pickedChar = i;
   document.querySelectorAll('.card').forEach((c,j) => c.classList.toggle('sel', j===i));
 }
-
 // Start Game
 function startGame(){
   document.getElementById('menu').style.display = 'none';
   document.getElementById('hud').style.display = 'flex';
   document.getElementById('wbar').style.display = 'flex';
   document.getElementById('wind-visual').style.display = 'flex';
+  document.getElementById('music-control').style.display = 'flex';
   document.getElementById('cammode').style.display = 'block';
-
   buildWorld();
-
   const c1 = CHARS[pickedChar];
   const c2 = CHARS.filter((_,i)=>i!==pickedChar)[Math.floor(Math.random()*2)];
-
   players = [
     makePlayer(0, c1, 220),
     makePlayer(1, c2, GW-240)
   ];
-
   players.forEach(p => { p.y = groundAt(p.x) - PSIZE; });
-
   tokens = [150, 150];
   bullets = []; blasts = []; particles = [];
   curTurn = 0; curWeapon = 0; wind = randWind();
-
   updateWindVisual();
-
   document.getElementById('av1').textContent = players[0].emoji;
   document.getElementById('av2').textContent = players[1].emoji;
   document.getElementById('pn1').textContent = players[0].name;
   document.getElementById('pn2').textContent = players[1].name;
-
   camX = camTargX = players[0].x - W/2;
-
   phase = 'playing';
   beginTurn(0);
   requestAnimationFrame(mainLoop);
-
   initAudio();
+  // Inicia música de fundo (com fallback para autoplay bloqueado)
+  bgMusic.play().catch(e => console.log("Autoplay bloqueado, clique na tela"));
 }
-
 function makePlayer(idx, cd, x){
   return {
     idx, emoji:cd.emoji, name:cd.name,
@@ -393,37 +395,31 @@ function makePlayer(idx, cd, x){
     alive:true, poisonTimer:0, taunts: cd.taunts
   };
 }
-
 // ==================== WORLD GENERATION (mantido igual) ====================
 function buildWorld(){
   terrain = new Float32Array(GW);
   platforms = [];
   obstacles = [];
-
   const seed = Math.random()*999+1;
   const minY = H*0.28;
   const maxY = H*0.80;
   const range = maxY - minY;
-
   for(let x=0; x<GW; x++){
     const n = octaveNoise(x, seed);
     terrain[x] = minY + n*range;
   }
-
   // Smooth
   for(let pass=0;pass<12;pass++){
     for(let x=1;x<GW-1;x++){
       terrain[x]=(terrain[x-1]+terrain[x]*3+terrain[x+1])/5;
     }
   }
-
   // Biome features (mesmo código original)
   const numFeatures = 6 + Math.floor(Math.random()*5);
   for(let f=0;f<numFeatures;f++){
     const type = Math.random();
     const cx = 300 + Math.random()*(GW-600);
     const hw = 120 + Math.random()*200;
-
     if(type < 0.35){ // hill
       const peak = H*0.20 + Math.random()*H*0.15;
       for(let x=Math.max(0,cx-hw);x<Math.min(GW,cx+hw);x++){
@@ -449,16 +445,12 @@ function buildWorld(){
       }
     }
   }
-
   for(let pass=0;pass<6;pass++){
     for(let x=1;x<GW-1;x++) terrain[x]=(terrain[x-1]+terrain[x]*2+terrain[x+1])/4;
   }
-
   for(let x=0;x<GW;x++) terrain[x]=Math.max(minY,Math.min(H-18,terrain[x]));
-
   flatPad(140,300);
   flatPad(GW-300,GW-140);
-
   // Floating platforms
   const numPlat = 4 + Math.floor(Math.random()*4);
   let tries = 0;
@@ -472,7 +464,6 @@ function buildWorld(){
     if(overlap) continue;
     platforms.push({x:px,y:py,w:pw,h:16});
   }
-
   // Obstacles
   const numObs = 5 + Math.floor(Math.random()*6);
   for(let i=0;i<numObs;i++){
@@ -482,20 +473,17 @@ function buildWorld(){
     obstacles.push({x:ox,y:oy,r:or_,hp:60,maxHp:60,icon:Math.random()<0.5?'🪨':'🌲'});
   }
 }
-
 function flatPad(x1,x2){
   const mid=(x1+x2)>>1;
   const y=terrain[Math.max(0,Math.min(GW-1,mid))];
   for(let x=x1;x<=Math.min(x2,GW-1);x++) terrain[x]=y;
 }
-
 function groundAt(wx){
   const xi=Math.floor(wx);
   if(xi<0) return terrain[0] ?? H*0.6;
   if(xi>=GW) return terrain[GW-1] ?? H*0.6;
   return terrain[xi];
 }
-
 function digHole(wx,wy,r){
   const x0=Math.max(0,Math.floor(wx-r));
   const x1=Math.min(GW-1,Math.ceil(wx+r));
@@ -510,32 +498,26 @@ function digHole(wx,wy,r){
     if(d<r+o.r) o.hp-=30;
   }
 }
-
 function platAt(x,y,r=8){
   for(const p of platforms){
     if(x+r>p.x && x-r<p.x+p.w && y>=p.y-4 && y<=p.y+20) return p.y;
   }
   return null;
 }
-
 // ==================== MAIN LOOP ====================
 let prevTS = 0;
 function mainLoop(ts){
   if(phase !== 'playing') return;
   const dt = Math.min((ts - prevTS)/16, 3);
   prevTS = ts;
-
   update(dt);
   draw();
-
   requestAnimationFrame(mainLoop);
 }
-
 // ==================== UPDATE ====================
 function update(dt){
   const ap = players[curTurn];
   const liveBullets = bullets.filter(b => b.alive);
-
   // Camera
   if(liveBullets.length > 0){
     camTargX = liveBullets[0].x - W/2;
@@ -550,7 +532,6 @@ function update(dt){
   }
   camTargX = Math.max(0, Math.min(GW - W, camTargX));
   camX += (camTargX - camX) * (camMode === 'bullet' ? 0.18 : 0.10) * dt;
-
   // Players physics
   for(const p of players){
     if(!p.alive) continue;
@@ -558,31 +539,26 @@ function update(dt){
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     p.vx *= Math.pow(0.82, dt);
-
     const gy = groundAt(p.x);
     const py = platAt(p.x, p.y + PSIZE);
     const floor = py !== null ? py : gy;
-
     if(p.y + PSIZE >= floor){
       p.y = floor - PSIZE;
       p.vy = 0;
       p.vx *= Math.pow(0.55, dt);
       p.onGround = true;
     } else p.onGround = false;
-
     p.x = Math.max(10, Math.min(GW-10, p.x));
-
     if(p.poisonTimer > 0){
       p.hp -= 0.05 * dt;
       p.poisonTimer -= dt;
       if(p.hp <= 0) doKill(p);
     }
   }
-
   // Controls
   if(ap && ap.alive && !shotFired && !endingTurn){
     if(keys['ArrowLeft'] || keys['a']){ ap.vx -= ap.spd * dt * 0.55; ap.facing = -1; }
-    if(keys['ArrowRight']|| keys['d']){ ap.vx += ap.spd * dt * 0.55; ap.facing =  1; }
+    if(keys['ArrowRight']|| keys['d']){ ap.vx += ap.spd * dt * 0.55; ap.facing = 1; }
     if((keys['ArrowUp'] || keys['w'] || keys[' ']) && ap.onGround){
       ap.vy = -9; ap.onGround = false;
       playSound('jump', 0.3);
@@ -595,7 +571,6 @@ function update(dt){
       document.getElementById('pbar').style.width = power + '%';
     }
   }
-
   // Bullets
   for(const b of bullets){
     if(!b.alive) continue;
@@ -605,16 +580,13 @@ function update(dt){
     b.y += b.vy * dt;
     b.trail.push({x:b.x, y:b.y});
     if(b.trail.length > 16) b.trail.shift();
-
     if(b.fuse > 0){
       b.fuse -= dt/60;
       if(b.fuse <= 0){ doExplode(b); continue; }
     }
-
     const gy = groundAt(b.x);
     const py = platAt(b.x, b.y, 4);
     const hitFloor = (py !== null && b.y >= py-2) || b.y + 4 >= gy;
-
     if(hitFloor || b.x < 0 || b.x > GW || b.y > H + 100){
       if(b.fuse > 0){
         b.vx = 0; b.vy = 0;
@@ -622,7 +594,6 @@ function update(dt){
       } else doExplode(b);
       continue;
     }
-
     for(const p of players){
       if(!p.alive || p.idx === b.ownerIdx) continue;
       if(Math.hypot(p.x - b.x, p.y - b.y) < 28){ doExplode(b); break; }
@@ -632,24 +603,23 @@ function update(dt){
       if(Math.hypot(o.x - b.x, o.y - b.y) < o.r + 8){ doExplode(b); break; }
     }
   }
-
   bullets = bullets.filter(b => b.alive);
   blasts = blasts.filter(e => e.t < e.dur);
   for(const e of blasts) e.t += dt;
-
   for(const p of particles){
     p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 0.15 * dt; p.life -= dt;
   }
   particles = particles.filter(p => p.life > 0);
-
   if(shotFired && !endingTurn && bullets.length === 0){
     scheduleTurnEnd(1500);
   }
-
+  // Sincronização da música com tensão (acelera nos últimos 5s do turno)
+  if (bgMusic && !bgMusic.paused) {
+    bgMusic.playbackRate = (turnClock <= 5 && turnClock > 0) ? 1.5 : 1.0;
+  }
   refreshHUD();
   updateWindVisual();
 }
-
 // ==================== EXPLODE & KILL ====================
 function doExplode(b){
   if(!b.alive) return;
@@ -658,21 +628,17 @@ function doExplode(b){
   digHole(b.x, b.y, b.radius * 0.65);
   spawnParticles(b.x, b.y, b.radius);
   playSound('explode', 0.4);
-
   for(const p of players){
     if(!p.alive) continue;
     const dist = Math.hypot(p.x - b.x, p.y - b.y);
     const range = b.radius + 30;
     if(dist >= range) continue;
-
     const f = 1 - dist/range;
     const dmg = b.dmg * f;
-
     p.hp = Math.max(0, p.hp - dmg);
     const ang = Math.atan2(p.y - b.y, p.x - b.x);
     p.vx += Math.cos(ang) * 12 * f;
     p.vy += Math.sin(ang) * 12 * f - 3;
-
     if(b.poison){
       p.poisonTimer = 280;
       showMsg('☠️ ENVENENADO! ☠️');
@@ -683,7 +649,6 @@ function doExplode(b){
       playSound('hit');
       tauntRandom(p);
     }
-
     if(p.idx !== b.ownerIdx){
       tokens[b.ownerIdx] += Math.floor(dmg * 2.5);
       playSound('coin', 0.2);
@@ -691,7 +656,6 @@ function doExplode(b){
   }
   showMsg(b.icon + ' ' + b.wname + '!');
 }
-
 function spawnParticles(ex, ey, r){
   const count = Math.floor(r * 0.6);
   for(let i = 0; i < count; i++){
@@ -707,12 +671,10 @@ function spawnParticles(ex, ey, r){
     });
   }
 }
-
 function doKill(p){
   if(!p.alive) return;
   p.alive = false; p.hp = 0;
   tokens[p.idx === 0 ? 1 : 0] += 600;
-
   const frases = [
     '💀 ' + p.name + ' FOI DE BASE!',
     '💀 ' + p.name + ' VIROU CHURRASCO!',
@@ -721,34 +683,28 @@ function doKill(p){
   showMsg(frases[Math.floor(Math.random()*frases.length)]);
   setTimeout(checkVictory, 1000);
 }
-
 function checkVictory(){
   const alive = players.filter(p => p.alive);
   if(alive.length >= 2) return;
-
   phase = 'gameover';
   clearInterval(clockTimer);
+  bgMusic.pause(); // pausa música na vitória
   const w = alive[0] || players[0];
-
   document.getElementById('vem').textContent = w.emoji;
   document.getElementById('vname').textContent = w.name;
   document.getElementById('vtok').textContent = '🪙 ' + tokens[w.idx] + ' $SELVAGEM (merecidos!)';
   document.getElementById('victory').style.display = 'flex';
 }
-
 // ==================== TURNS ====================
 function beginTurn(idx){
   curTurn = idx; shotFired = false; endingTurn = false;
   power = 0; powerDir = 1; wind = randWind(); turnClock = 20;
-
   const p = players[idx];
   document.getElementById('turnlbl').textContent = 'VEZ DE ' + p.name;
   document.getElementById('clock').textContent = '20';
   document.getElementById('clock').style.color = '#39ff14';
-
   updateWindVisual();
   clearInterval(clockTimer);
-
   clockTimer = setInterval(()=>{
     turnClock--;
     document.getElementById('clock').textContent = turnClock;
@@ -761,10 +717,8 @@ function beginTurn(idx){
       scheduleTurnEnd(0);
     }
   },1000);
-
   tauntRandom(p);
 }
-
 function scheduleTurnEnd(delay){
   if(endingTurn) return;
   endingTurn = true;
@@ -776,54 +730,38 @@ function scheduleTurnEnd(delay){
     beginTurn(next.idx);
   }, delay);
 }
-
 function randWind(){ return (Math.random() - 0.5) * 0.12; }
-
-// ==================== FIRE ====================
+// ==================== FIRE (VERSÃO ATUALIZADA E MELHORADA) ====================
 function doFire(){
-  if(shotFired || endingTurn) return;
-  const ap = players[curTurn];
-  if(!ap || !ap.alive) return;
-
-  const w = WEAPONS[curWeapon];
-  if(tokens[ap.idx] < w.cost){
-    showMsg('❌ TÁ DURO! VAI TRABALHAR!');
-    return;
+  if(shotFired||endingTurn) return;
+  const ap=players[curTurn];
+  if(!ap||!ap.alive) return;
+  const w=WEAPONS[curWeapon];
+  if(tokens[ap.idx]<w.cost){ showMsg('❌ TÁ DURO! VAI TRABALHAR!'); return; }
+  tokens[ap.idx]=Math.max(0,tokens[ap.idx]-w.cost);
+  let b;
+  if (w.isProj) { 
+    // Armas lançadas (bomba, foguete, veneno)
+    const wx=mxS+camX;
+    const angle=Math.atan2(myS-(ap.y-PSIZE),wx-ap.x);
+    const spd=3.5+power*0.16;
+    let initVx = Math.cos(angle)*spd;
+    initVx += wind * 5; // vento no lançamento
+    b = { alive:true, x: ap.x, y: ap.y-PSIZE, vx: initVx, vy: Math.sin(angle)*spd, radius: w.radius, dmg: w.baseDmg*ap.dmgMult, fuse: w.fuse, poison: w.poison, ownerIdx: ap.idx, icon: w.icon, wname: w.name, trail: [] };
+  } else { 
+    // Armas plantadas (dinamite) – larga no chão na frente do jogador
+    const dir = ap.facing; 
+    const dropX = ap.x + dir * 25; 
+    const groundY = groundAt(dropX) - 8; 
+    b = { alive: true, x: dropX, y: groundY, vx: 0, vy: 0, radius: w.radius, dmg: w.baseDmg*ap.dmgMult, fuse: w.fuse, poison: w.poison, ownerIdx: ap.idx, icon: w.icon, wname: w.name, trail: [] };
   }
-
-  tokens[ap.idx] = Math.max(0, tokens[ap.idx] - w.cost);
-
-  const wx = mxS + camX;
-  const angle = Math.atan2(myS - (ap.y - PSIZE), wx - ap.x);
-  const spd = 3.5 + power * 0.16;
-
-  let initVx = w.isProj ? Math.cos(angle) * spd : 0;
-  initVx += wind * 5;
-
-  const b = {
-    alive:true,
-    x:ap.x, y:ap.y - PSIZE,
-    vx: initVx,
-    vy: w.isProj ? Math.sin(angle) * spd : 0,
-    radius: w.radius,
-    dmg: w.baseDmg * ap.dmgMult,
-    fuse: w.fuse,
-    poison: w.poison,
-    ownerIdx: ap.idx,
-    icon: w.icon,
-    wname: w.name,
-    trail: []
-  };
-
   bullets.push(b);
   shotFired = true;
   charging = false;
-  document.getElementById('pwrap').style.display = 'none';
-
-  playSound('shoot', 0.4);
-  tauntRandom(ap, 'PEW PEW!');
+  document.getElementById('pwrap').style.display='none';
+  playSound('shoot',0.4);
+  tauntRandom(ap, w.isProj ? 'PEW PEW!' : 'ACENDE O PAVIO!');
 }
-
 // ==================== INPUT ====================
 cv.addEventListener('mousedown', e => {
   if(phase !== 'playing' || shotFired || endingTurn) return;
@@ -831,17 +769,13 @@ cv.addEventListener('mousedown', e => {
   mouseHeld = true; charging = true; power = 0; powerDir = 1;
   document.getElementById('pwrap').style.display = 'block';
 });
-
 cv.addEventListener('mousemove', e => { mxS = e.clientX; myS = e.clientY; });
-
 cv.addEventListener('mouseup', () => {
   if(!mouseHeld) return;
   mouseHeld = false;
   if(charging){ charging = false; doFire(); }
 });
-
 cv.addEventListener('contextmenu', e => e.preventDefault());
-
 // Touch support
 cv.addEventListener('touchstart', e => {
   e.preventDefault();
@@ -850,19 +784,16 @@ cv.addEventListener('touchstart', e => {
   mouseHeld = true; charging = true; power = 0; powerDir = 1;
   document.getElementById('pwrap').style.display = 'block';
 }, {passive:false});
-
 cv.addEventListener('touchmove', e => {
   e.preventDefault();
   const t = e.touches[0];
   mxS = t.clientX; myS = t.clientY;
 }, {passive:false});
-
 cv.addEventListener('touchend', e => {
   e.preventDefault();
   mouseHeld = false;
   if(charging){ charging = false; doFire(); }
 }, {passive:false});
-
 document.addEventListener('keydown', e => {
   keys[e.key] = true;
   if(e.key === '1') selW(0);
@@ -871,14 +802,11 @@ document.addEventListener('keydown', e => {
   if(e.key === '4') selW(3);
   if(e.key === ' ') e.preventDefault();
 });
-
 document.addEventListener('keyup', e => { keys[e.key] = false; });
-
 function selW(i){
   curWeapon = i;
   document.querySelectorAll('.wslot').forEach((el,j) => el.classList.toggle('wa', j===i));
 }
-
 // ==================== HUD & MESSAGES ====================
 function refreshHUD(){
   players.forEach((p,i) => {
@@ -887,7 +815,6 @@ function refreshHUD(){
     document.getElementById('tk' + (i+1)).textContent = '🪙 ' + tokens[i] + ' $SELVAGEM';
   });
 }
-
 function showMsg(txt){
   const el = document.getElementById('msg');
   el.textContent = txt;
@@ -895,7 +822,6 @@ function showMsg(txt){
   clearTimeout(msgTO);
   msgTO = setTimeout(() => el.style.opacity = '0', 2200);
 }
-
 // Taunts
 function tauntRandom(p, forced = null){
   if(Date.now() - lastTaunt < 1500) return;
@@ -906,7 +832,6 @@ function tauntRandom(p, forced = null){
   lastTaunt = Date.now();
   setTimeout(() => bubble.style.opacity = '0', 1200);
 }
-
 function updateWindVisual(){
   const sock = document.getElementById('windsock');
   const txt = document.getElementById('wind-text');
@@ -915,7 +840,6 @@ function updateWindVisual(){
   const dir = wind > 0 ? '→' : (wind < 0 ? '←' : '↕');
   txt.textContent = `VENTO ${dir} ${Math.abs((wind*100)|0)}%`;
 }
-
 // ==================== DRAW (mantido igual ao original) ====================
 function draw(){
   // Sky
@@ -923,16 +847,12 @@ function draw(){
   sky.addColorStop(0,'#010901');
   sky.addColorStop(1,'#071a07');
   ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
-
   drawStars();
-
   // Scanlines
   ctx.fillStyle = 'rgba(0,255,0,0.014)';
   for(let y=0; y<H; y+=4) ctx.fillRect(0,y,W,1);
-
   ctx.save();
   ctx.translate(-camX, 0);
-
   drawTerrain();
   drawPlatforms();
   drawObstacles();
@@ -941,17 +861,14 @@ function draw(){
   drawParticles();
   drawAim();
   drawPlayers();
-
   ctx.restore();
 }
-
 const stars = Array.from({length:80}, () => ({
   x: Math.random()*GW,
   y: Math.random()*H*0.6,
   r: Math.random()*1.4 + 0.3,
   spd: 0.1 + Math.random()*0.3
 }));
-
 function drawStars(){
   ctx.fillStyle = 'rgba(200,255,200,0.5)';
   for(const s of stars){
@@ -961,7 +878,6 @@ function drawStars(){
     ctx.fill();
   }
 }
-
 function drawTerrain(){
   const g = ctx.createLinearGradient(0, H*0.25, 0, H);
   g.addColorStop(0,'#183808');
@@ -972,7 +888,6 @@ function drawTerrain(){
   ctx.moveTo(0,H);
   for(let x=0;x<GW;x++) ctx.lineTo(x, terrain[x]);
   ctx.lineTo(GW,H); ctx.closePath(); ctx.fill();
-
   ctx.save();
   ctx.globalAlpha = 0.15;
   for(let s=0;s<3;s++){
@@ -985,14 +900,12 @@ function drawTerrain(){
     ctx.stroke();
   }
   ctx.restore();
-
   ctx.strokeStyle = 'rgba(57,255,20,0.55)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(0, terrain[0]);
   for(let x=1;x<GW;x++) ctx.lineTo(x, terrain[x]);
   ctx.stroke();
-
   ctx.fillStyle = '#2ecc14';
   for(let x=2;x<GW;x+=9){
     const gy = terrain[x];
@@ -1001,7 +914,6 @@ function drawTerrain(){
     ctx.fillRect(x+6, gy-4, 2, 4);
   }
 }
-
 function drawPlatforms(){
   for(const p of platforms){
     const pg = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
@@ -1011,14 +923,12 @@ function drawPlatforms(){
     ctx.beginPath();
     ctx.roundRect(p.x, p.y, p.w, p.h, 4);
     ctx.fill();
-
     ctx.strokeStyle = 'rgba(57,255,20,0.6)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(p.x, p.y+1);
     ctx.lineTo(p.x + p.w, p.y+1);
     ctx.stroke();
-
     ctx.fillStyle = '#3edc1e';
     for(let gx = p.x+2; gx < p.x + p.w - 2; gx += 7){
       ctx.fillRect(gx, p.y-3, 2, 3);
@@ -1026,7 +936,6 @@ function drawPlatforms(){
     }
   }
 }
-
 function drawObstacles(){
   for(const o of obstacles){
     if(o.hp <= 0) continue;
@@ -1036,7 +945,6 @@ function drawObstacles(){
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(o.icon, o.x, o.y);
-
     if(hpR < 0.5){
       ctx.globalAlpha = 0.4;
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -1047,7 +955,6 @@ function drawObstacles(){
     ctx.globalAlpha = 1;
   }
 }
-
 function drawBlasts(){
   for(const e of blasts){
     const alpha = 1 - e.t / e.dur;
@@ -1058,13 +965,11 @@ function drawBlasts(){
     gr.addColorStop(1, 'rgba(180,0,0,0)');
     ctx.fillStyle = gr;
     ctx.beginPath(); ctx.arc(e.x, e.y, r, 0, Math.PI*2); ctx.fill();
-
     ctx.strokeStyle = `rgba(255,200,0,${(alpha*0.4).toFixed(2)})`;
     ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(e.x, e.y, r*1.2, 0, Math.PI*2); ctx.stroke();
   }
 }
-
 function drawBullets(){
   for(const b of bullets){
     if(!b.alive) continue;
@@ -1081,7 +986,6 @@ function drawBullets(){
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(b.icon, b.x, b.y);
-
     if(b.fuse > 0){
       ctx.fillStyle = '#f5e642';
       ctx.font = 'bold 10px monospace';
@@ -1089,7 +993,6 @@ function drawBullets(){
     }
   }
 }
-
 function drawParticles(){
   for(const p of particles){
     const a = Math.min(1, p.life/10);
@@ -1101,15 +1004,12 @@ function drawParticles(){
   }
   ctx.globalAlpha = 1;
 }
-
 function drawAim(){
   const ap = players[curTurn];
   if(!ap || !ap.alive || shotFired || endingTurn) return;
-
   const wx = mxS + camX;
   const angle = Math.atan2(myS - (ap.y - PSIZE), wx - ap.x);
   const len = 80;
-
   ctx.save();
   ctx.setLineDash([5,6]);
   ctx.strokeStyle = 'rgba(57,255,20,0.38)';
@@ -1119,25 +1019,21 @@ function drawAim(){
   ctx.lineTo(ap.x + Math.cos(angle)*len, ap.y - PSIZE + Math.sin(angle)*len);
   ctx.stroke();
   ctx.setLineDash([]);
-
   ctx.fillStyle = 'rgba(57,255,20,0.55)';
   ctx.beginPath();
   ctx.arc(ap.x + Math.cos(angle)*len, ap.y - PSIZE + Math.sin(angle)*len, 3, 0, Math.PI*2);
   ctx.fill();
   ctx.restore();
 }
-
 function drawPlayers(){
   for(const p of players){
     if(!p.alive) continue;
     const sx = p.x, sy = p.y;
-
     // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.beginPath();
     ctx.ellipse(sx, groundAt(sx), 15, 4, 0, 0, Math.PI*2);
     ctx.fill();
-
     // Poison aura
     if(p.poisonTimer > 0){
       const a = 0.1 + 0.08 * Math.sin(Date.now()/200);
@@ -1146,7 +1042,6 @@ function drawPlayers(){
       ctx.arc(sx, sy, 30, 0, Math.PI*2);
       ctx.fill();
     }
-
     // Emoji
     ctx.save();
     ctx.translate(sx, sy);
@@ -1156,7 +1051,6 @@ function drawPlayers(){
     ctx.textBaseline = 'middle';
     ctx.fillText(p.emoji, 0, 0);
     ctx.restore();
-
     // HP bar + name
     const BW = 46;
     const hpR = Math.max(0, p.hp / p.maxHp);
@@ -1164,14 +1058,12 @@ function drawPlayers(){
     ctx.fillRect(sx - BW/2, sy - 38, BW, 6);
     ctx.fillStyle = hpR > 0.5 ? '#39ff14' : hpR > 0.25 ? '#f5e642' : '#ff1a3c';
     ctx.fillRect(sx - BW/2, sy - 38, BW * hpR, 6);
-
     ctx.fillStyle = p.idx === 0 ? '#00d4ff' : '#ff6b1a';
     ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     ctx.fillText(p.name, sx, sy - 42);
     ctx.fillText(Math.ceil(Math.max(0, p.hp)) + ' HP', sx, sy - 32);
-
     // Turn indicator
     if(p.idx === curTurn && !endingTurn){
       const bob = Math.sin(Date.now()/260) * 3;
@@ -1185,7 +1077,6 @@ function drawPlayers(){
     }
   }
 }
-
 // roundRect polyfill
 if(!CanvasRenderingContext2D.prototype.roundRect){
   CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){

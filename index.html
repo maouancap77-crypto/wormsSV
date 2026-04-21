@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>SELVAGEM — Worms da Floresta (Edição IA + Comédia)</title>
+<title>SELVAGEM — Worms da Floresta (IA Reativa + Comédia)</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#040d04; overflow:hidden; font-family:'Courier New',monospace; user-select:none; }
@@ -228,7 +228,6 @@ function startGame(aiMode = false) {
   const c1 = CHARS[pickedChar];
   let c2;
   if (vsAI) {
-    // IA será o adversário, escolhe aleatoriamente entre os outros dois
     const otherChars = CHARS.filter((_,i)=>i!==pickedChar);
     c2 = otherChars[Math.floor(Math.random()*otherChars.length)];
   } else {
@@ -426,79 +425,179 @@ function update(dt){
   refreshHUD(); updateWindVisual();
 }
 
-// ==================== IA ====================
+// ==================== NOVA IA (REATIVA E ALEATÓRIA) ====================
 function iaTakeTurn() {
   if (!vsAI || curTurn !== 1 || aiThinking || shotFired || endingTurn) return;
   const aiPlayer = players[1];
   const enemy = players[0];
   if (!aiPlayer.alive || !enemy.alive) return;
+  
   aiThinking = true;
-  const thinkTime = 800 + Math.random() * 1000;
+  const thinkTime = 500 + Math.random() * 2000;
+  
   aiActionTimer = setTimeout(() => {
     aiActionTimer = null;
     chooseWeaponForAI(aiPlayer, enemy);
-    moveAI(aiPlayer, enemy);
-    setTimeout(() => aimAndShootAI(aiPlayer, enemy), 400);
+    performAIActions(aiPlayer, enemy);
   }, thinkTime);
 }
 
 function chooseWeaponForAI(ai, enemy) {
   const dist = Math.abs(ai.x - enemy.x);
-  let weaponIndex = 0;
-  if (ai.name === 'ONÇA') weaponIndex = (dist > 300) ? 1 : 0;
-  else if (ai.name === 'URSO') weaponIndex = (dist < 150) ? 2 : 1;
-  else if (ai.name === 'LAGARTO') weaponIndex = (tokens[ai.idx] >= WEAPONS[3].cost) ? 3 : 0;
-  if (tokens[ai.idx] < WEAPONS[weaponIndex].cost) {
-    let cheapest = 0;
-    for (let i = 1; i < WEAPONS.length; i++) if (WEAPONS[i].cost < WEAPONS[cheapest].cost) cheapest = i;
-    weaponIndex = cheapest;
+  const tokensAvailable = tokens[ai.idx];
+  const affordableWeapons = WEAPONS.filter(w => w.cost <= tokensAvailable);
+  if (affordableWeapons.length === 0) {
+    curWeapon = 0;
+    selW(0);
+    return;
   }
-  curWeapon = weaponIndex;
-  selW(weaponIndex);
+  
+  let weights = WEAPONS.map((w, idx) => {
+    let weight = 1.0;
+    if (ai.name === 'ONÇA') {
+      if (idx === 0) weight *= 1.2;
+      if (idx === 1) weight *= (dist > 250 ? 1.8 : 0.8);
+    } else if (ai.name === 'URSO') {
+      if (idx === 2) weight *= (dist < 180 ? 2.5 : 0.5);
+      if (idx === 1) weight *= 1.3;
+    } else if (ai.name === 'LAGARTO') {
+      if (idx === 3) weight *= 2.2;
+      if (idx === 0) weight *= 0.7;
+    }
+    
+    if (WEAPONS[idx].isProj) {
+      if (dist > 350) weight *= (idx === 1 ? 1.8 : 1.2);
+      else if (dist < 100) weight *= 0.7;
+    } else {
+      if (dist > 200) weight *= 0.2;
+    }
+    
+    if (tokensAvailable < 80) weight *= (w.cost < 30 ? 1.5 : 0.6);
+    weight *= 0.7 + Math.random() * 0.9;
+    return { idx, weight };
+  });
+  
+  weights.sort((a, b) => b.weight - a.weight);
+  let chosenIdx;
+  if (Math.random() < 0.7) {
+    chosenIdx = weights[0].idx;
+  } else {
+    chosenIdx = weights.length > 1 ? weights[1].idx : weights[0].idx;
+  }
+  
+  if (WEAPONS[chosenIdx].cost > tokensAvailable) {
+    chosenIdx = affordableWeapons.reduce((a, b) => a.cost < b.cost ? a : b);
+    chosenIdx = WEAPONS.indexOf(chosenIdx);
+  }
+  
+  curWeapon = chosenIdx;
+  selW(chosenIdx);
 }
 
-function moveAI(ai, enemy) {
+function performAIActions(ai, enemy) {
+  if (!ai.alive || !enemy.alive) {
+    aiThinking = false;
+    return;
+  }
+  
   const distX = enemy.x - ai.x;
   const direction = distX > 0 ? 1 : -1;
-  if (Math.abs(distX) <= 200) return;
-  const moveKey = direction === 1 ? 'd' : 'a';
-  keys[moveKey] = true;
-  const moveDuration = 500 + Math.random() * 700;
-  setTimeout(() => { keys[moveKey] = false; }, moveDuration);
-  if (Math.random() < 0.4 && ai.onGround) {
-    keys[' '] = true;
-    setTimeout(() => { keys[' '] = false; }, 100);
+  const absDist = Math.abs(distX);
+  
+  let moveDuration = 0;
+  if (absDist > 120) {
+    moveDuration = 400 + Math.random() * 1000;
+  } else {
+    if (Math.random() < 0.4) {
+      moveDuration = 200 + Math.random() * 400;
+    }
   }
+  
+  let moveDir = direction;
+  if (Math.random() < 0.25) moveDir *= -1;
+  
+  if (moveDuration > 0) {
+    const moveKey = moveDir === 1 ? 'd' : 'a';
+    keys[moveKey] = true;
+    setTimeout(() => { keys[moveKey] = false; }, moveDuration);
+  }
+  
+  if (ai.onGround && Math.random() < 0.7) {
+    keys[' '] = true;
+    setTimeout(() => { keys[' '] = false; }, 120);
+  }
+  
+  if (Math.random() < 0.2) {
+    chooseWeaponForAI(ai, enemy);
+    showMsg(ai.name + ' trocou de arma!');
+  }
+  
+  const shouldWait = Math.random() < 0.3;
+  const waitTime = shouldWait ? 600 + Math.random() * 1200 : 200 + Math.random() * 500;
+  
+  setTimeout(() => {
+    if (!ai.alive || !enemy.alive || shotFired || endingTurn) {
+      aiThinking = false;
+      return;
+    }
+    aimAndShootAI(ai, enemy);
+  }, moveDuration + waitTime);
 }
 
 function aimAndShootAI(ai, enemy) {
-  if (!ai.alive || !enemy.alive || shotFired || endingTurn) { aiThinking = false; return; }
+  if (!ai.alive || !enemy.alive || shotFired || endingTurn) {
+    aiThinking = false;
+    return;
+  }
+  
   const dx = enemy.x - ai.x;
   const dy = (enemy.y - PSIZE/2) - (ai.y - PSIZE/2);
-  const errorAngle = (Math.random() - 0.5) * 0.25;
-  let baseAngle = Math.atan2(dy, dx);
   const dist = Math.hypot(dx, dy);
-  baseAngle -= 0.002 * dist;
+  
+  let errorAngle = (Math.random() - 0.5) * 0.35;
+  if (dist > 400) errorAngle *= 1.8;
+  else if (dist < 150) errorAngle *= 0.7;
+  if (ai.poisonTimer > 0) errorAngle *= 1.5;
+  
+  let baseAngle = Math.atan2(dy, dx);
+  baseAngle -= 0.0025 * dist;
   const finalAngle = baseAngle + errorAngle;
-  let desiredPower = Math.min(90, 30 + dist * 0.1);
-  desiredPower = Math.max(20, desiredPower);
-  charging = true; power = 0; powerDir = 1;
+  
+  let desiredPower = 35 + dist * 0.08;
+  desiredPower = Math.min(95, Math.max(18, desiredPower));
+  desiredPower *= 0.85 + Math.random() * 0.3;
+  
+  if (Math.random() < 0.1) {
+    desiredPower = Math.random() < 0.5 ? 15 : 98;
+  }
+  
+  charging = true;
+  power = 0;
+  powerDir = 1;
   document.getElementById('pwrap').style.display = 'block';
+  
   const chargeInterval = setInterval(() => {
-    power += powerDir * 3.5;
+    power += powerDir * 3.8;
     if (power >= desiredPower) {
       power = desiredPower;
       clearInterval(chargeInterval);
       setTimeout(() => {
-        const targetX = enemy.x + (Math.random() - 0.5) * 40;
-        const targetY = enemy.y - PSIZE/2 + (Math.random() - 0.5) * 30;
+        if (!ai.alive || !enemy.alive || shotFired || endingTurn) {
+          aiThinking = false;
+          charging = false;
+          document.getElementById('pwrap').style.display = 'none';
+          return;
+        }
+        const targetX = enemy.x + (Math.random() - 0.5) * 70;
+        const targetY = enemy.y - PSIZE/2 + (Math.random() - 0.5) * 50;
         mxS = targetX - camX;
         myS = targetY;
+        
         doFire();
         aiThinking = false;
         charging = false;
         document.getElementById('pwrap').style.display = 'none';
-      }, 100);
+      }, 80 + Math.random() * 150);
     }
     if (power >= 100) powerDir = -1;
     if (power <= 0) powerDir = 1;
@@ -597,6 +696,8 @@ function doKill(p){
   tokens[p.idx===0?1:0]+=600;
   const frases = ['💀 '+p.name+' FOI DE BASE!','💀 '+p.name+' VIROU CHURRASCO!','💀 '+p.name+' TOMOU UM SACODE!'];
   showMsg(frases[Math.floor(Math.random()*frases.length)]);
+  if (aiActionTimer) { clearTimeout(aiActionTimer); aiActionTimer = null; }
+  aiThinking = false;
   setTimeout(checkVictory,1000);
 }
 
@@ -863,7 +964,7 @@ function selW(i){
 
 cv.addEventListener('mousedown', e => {
   if(phase !== 'playing' || shotFired || endingTurn) return;
-  if(vsAI && curTurn === 1) return; // IA não usa mouse
+  if(vsAI && curTurn === 1) return;
   mxS = e.clientX; myS = e.clientY;
   mouseHeld = true; charging = true; power = 0; powerDir = 1;
   document.getElementById('pwrap').style.display = 'block';
